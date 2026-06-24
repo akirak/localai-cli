@@ -59,7 +59,7 @@ pub struct Operation {
     pub produces: Vec<String>,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Clone)]
 #[allow(dead_code)]
 pub struct Parameter {
     pub name: String,
@@ -78,16 +78,61 @@ pub fn load_doc() -> anyhow::Result<Doc> {
     Ok(serde_json::from_str(DOC_JSON)?)
 }
 
+/// A flattened, ordered view of a single operation within an API path.
+#[derive(Debug, Clone)]
+pub struct Endpoint {
+    pub method: String,
+    pub path: String,
+    pub summary: String,
+    pub tags: Vec<String>,
+    #[allow(dead_code)]
+    pub parameters: Vec<Parameter>,
+}
+
+/// Build a flat, sorted list of all operations defined in the doc.
+pub fn endpoints() -> anyhow::Result<Vec<Endpoint>> {
+    let doc = load_doc()?;
+    let mut out: Vec<Endpoint> = Vec::new();
+    for (path, item) in &doc.paths {
+        for (method, op) in item.operations() {
+            out.push(Endpoint {
+                method: method.to_string(),
+                path: path.clone(),
+                summary: op.summary.clone().unwrap_or_default(),
+                tags: op.tags.clone(),
+                parameters: op.parameters.clone(),
+            });
+        }
+    }
+    out.sort_by(|a, b| a.path.cmp(&b.path).then_with(|| a.method.cmp(&b.method)));
+    Ok(out)
+}
+
+/// All tags found in the doc, sorted and deduplicated.
+#[allow(dead_code)]
+pub fn tags() -> anyhow::Result<Vec<String>> {
+    let doc = load_doc()?;
+    let mut tags: Vec<String> = doc
+        .paths
+        .values()
+        .flat_map(|item| item.operations())
+        .flat_map(|(_, op)| op.tags.iter().cloned())
+        .collect();
+    tags.sort();
+    tags.dedup();
+    Ok(tags)
+}
+
 pub fn list_endpoints(tag_filter: Option<&str>) -> anyhow::Result<()> {
     let doc = load_doc()?;
     let mut entries: Vec<(String, String, String)> = Vec::new();
 
     for (path, item) in &doc.paths {
         for (method, op) in item.operations() {
-            if let Some(filter) = tag_filter {
-                if !op.tags.iter().any(|t| t.eq_ignore_ascii_case(filter)) {
-                    continue;
-                }
+            if let Some(filter) = tag_filter
+                && !op.tags.iter().any(|t| t.eq_ignore_ascii_case(filter))
+            {
+                continue;
             }
             let summary = op.summary.as_deref().unwrap_or("");
             let tags = op.tags.join(", ");

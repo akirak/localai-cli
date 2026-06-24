@@ -7,6 +7,7 @@ use std::io::{self, Read};
 
 mod client;
 mod discover;
+mod tui;
 
 use client::LocalAIClient;
 
@@ -107,6 +108,8 @@ enum Commands {
     },
     /// List API tags
     Tags,
+    /// Interactive terminal UI for browsing and calling the APIs
+    Tui,
 }
 
 #[derive(Subcommand)]
@@ -524,6 +527,10 @@ async fn main() -> Result<()> {
 
         Commands::Tags => {
             discover::list_tags()?;
+        }
+
+        Commands::Tui => {
+            tui::run(client).await?;
         }
     }
 
