@@ -2,6 +2,12 @@ name: Install dependencies
 
 description: Set up Nix with a GH-native cache enabled
 
+inputs:
+  cachix-auth-token:
+    description: Optional auth token for pushing to the configured Cachix cache.
+    required: false
+    default: ""
+
 runs:
   using: composite
   steps:
@@ -25,6 +31,7 @@ runs:
         gc-max-store-size-linux: 3G
 
     - uses: cachix/cachix-action@ad2ddac53f961de1989924296a1f236fcfbaa4fc # v15
+      if: ${{ inputs.cachix-auth-token != '' }}
       with:
         name: akirak
-        authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
+        authToken: ${{ inputs.cachix-auth-token }}

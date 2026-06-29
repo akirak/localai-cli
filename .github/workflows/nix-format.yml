@@ -22,6 +22,8 @@ jobs:
           persist-credentials: false
 
       - uses: ./.github/actions/setup-nix
+        with:
+          cachix-auth-token: ${{ secrets.CACHIX_AUTH_TOKEN }}
 
       - name: Detect Nix system
         run: echo "SYSTEM=$(nix eval --raw --expr builtins.currentSystem --impure)" >> "$GITHUB_ENV"
