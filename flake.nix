@@ -102,7 +102,6 @@
           treefmt = {
             projectRootFile = "Cargo.toml";
             programs = {
-              actionlint.enable = true;
               nixfmt.enable = true;
               rustfmt.enable = true;
               zizmor.enable = true;
