@@ -1,0 +1,30 @@
+name: Install dependencies
+
+description: Set up Nix with a GH-native cache enabled
+
+runs:
+  using: composite
+  steps:
+    - uses: cachix/install-nix-action@8aa03977d8d733052d78f4e008a241fd1dbf36b3 # v31.10.6
+      with:
+        extra_nix_config: |
+          experimental-features = nix-command flakes
+          accept-flake-config = true
+
+    - name: Restore the package cache
+      uses: nix-community/cache-nix-action@7df957e333c1e5da7721f60227dbba6d06080569 # v7
+      with:
+        primary-key: nix-${{ runner.os }}-${{ hashFiles('**/flake.lock', 'Cargo.lock') }}
+        restore-prefixes-first-match: nix-${{ runner.os }}-
+        paths: |
+          .cargo/registry/cache
+          .cargo/registry/index
+          .cargo/registry/src
+          .cargo/git/db
+          .cargo/git/checkouts
+        gc-max-store-size-linux: 3G
+
+    - uses: cachix/cachix-action@ad2ddac53f961de1989924296a1f236fcfbaa4fc # v15
+      with:
+        name: akirak
+        authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
