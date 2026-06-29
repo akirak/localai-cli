@@ -63,7 +63,17 @@
               # source filtering to include non-standard files during the build.
               # See
               # https://crane.dev/source-filtering.html?highlight=source#source-filtering
-              src = craneLib.cleanCargoSource (craneLib.path ./.);
+              src =
+                let
+                  unfilteredRoot = ./.;
+                in
+                lib.fileset.toSource {
+                  root = unfilteredRoot;
+                  fileset = lib.fileset.unions [
+                    (craneLib.fileset.commonCargoSources unfilteredRoot)
+                    ./doc.json
+                  ];
+                };
 
               nativeBuildInputs = with pkgs; [
                 pkg-config
